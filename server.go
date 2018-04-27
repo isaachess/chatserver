@@ -52,7 +52,7 @@ func (s *Server) Serve() error {
 func (s *Server) handle(conn net.Conn) error {
 	defer conn.Close()
 
-	if _, err := conn.Write([]byte("Please enter your name: ")); err != nil {
+	if err := s.writeMsg("Please enter your name: ", conn); err != nil {
 		return err
 	}
 
@@ -64,13 +64,17 @@ func (s *Server) handle(conn net.Conn) error {
 	}
 
 	name := sc.Text()
+	if s.haveChatter(name) {
+		return s.writeMsg("Chatter with that name already exists.\n", conn)
+	}
+
 	s.addChatter(name, conn)
 	// defer cleanups
 	defer s.removeChatter(name)
 	defer s.sendLogout(name)
 
 	// tell new chatter welcome
-	if _, err := conn.Write([]byte(s.welcomeMsg(name))); err != nil {
+	if err := s.writeMsg(s.welcomeMsg(name), conn); err != nil {
 		return err
 	}
 
@@ -108,6 +112,18 @@ func (s *Server) numChatters() int {
 	return len(s.chatters)
 }
 
+func (s *Server) haveChatter(name string) bool {
+	s.chatters_m.RLock()
+	defer s.chatters_m.RUnlock()
+	_, ok := s.chatters[name]
+	return ok
+}
+
+func (s *Server) writeMsg(msg string, conn net.Conn) error {
+	_, err := conn.Write([]byte(msg))
+	return err
+}
+
 func (s *Server) broadcastMsg(fromName, msg string) error {
 	s.chatters_m.RLock()
 	defer s.chatters_m.RUnlock()
@@ -117,8 +133,7 @@ func (s *Server) broadcastMsg(fromName, msg string) error {
 			// don't want to send to yourself, that would be weird
 			continue
 		}
-		_, err := conn.Write([]byte(toSend))
-		if err != nil {
+		if err := s.writeMsg(toSend, conn); err != nil {
 			return err
 		}
 	}

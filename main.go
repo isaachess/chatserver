@@ -3,9 +3,11 @@ package main
 import (
 	"encoding/json"
 	"flag"
-	"io/ioutil"
 	"log"
 	"os"
+
+	"chatserver/logger"
+	"chatserver/server"
 )
 
 const (
@@ -37,13 +39,13 @@ func run() error {
 		return err
 	}
 
-	fileLogger := NewFileLogger(conf.LogLocation)
+	fileLogger := logger.NewFileLogger(conf.LogLocation)
 	if err := fileLogger.Open(); err != nil {
 		return err
 	}
 	defer fileLogger.Close()
 
-	server := NewServer(conf.Host, conf.Port, fileLogger)
+	server := server.NewServer(conf.Host, conf.Port, fileLogger)
 	return server.Serve()
 }
 
@@ -65,12 +67,7 @@ func loadConfig(configPath string) (*serverConfig, error) {
 	}
 	defer file.Close()
 
-	raw, err := ioutil.ReadAll(file)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := json.Unmarshal(raw, conf); err != nil {
+	if err := json.NewDecoder(file).Decode(conf); err != nil {
 		return nil, err
 	}
 

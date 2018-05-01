@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"bufio"
@@ -7,18 +7,20 @@ import (
 	"net"
 	"sync"
 	"time"
+
+	"chatserver/logger"
 )
 
 type Server struct {
 	host   string
 	port   int
-	logger Logger
+	logger logger.Logger
 
 	chatters_m sync.RWMutex
 	chatters   map[string]net.Conn
 }
 
-func NewServer(host string, port int, l Logger) *Server {
+func NewServer(host string, port int, l logger.Logger) *Server {
 	return &Server{
 		host:     host,
 		port:     port,

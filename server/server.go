@@ -148,6 +148,10 @@ func (s *Server) broadcastMsg(fromName, msg string) error {
 
 func (s *Server) sendLogout(name string) {
 	s.broadcastMsg(name, fmt.Sprintf("%s has logged out\n", name))
+	total := s.numChatters()
+	if total <= 0 {
+		s.broadcastMsg(name, "Alone again.  So very, very alone...")
+	}
 }
 
 func (s *Server) welcomeMsg(name string) string {
